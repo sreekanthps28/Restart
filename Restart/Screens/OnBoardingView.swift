@@ -15,6 +15,12 @@ struct OnBoardingView: View {
     @State var buttonWidth:Double = UIScreen.main.bounds.width - 80
     @State var buttonOffset:CGFloat = 0
     
+    @State private var isAnimating:Bool = false
+    @State private var imageOffset:CGSize = .zero
+    @State private var indicatorOpacity:Double = 1.0
+    @State private var imageTitle:String = "Share."
+    
+    let hapticFeedBack = UINotificationFeedbackGenerator()
     //MARK: - Body
     var body: some View {
      
@@ -25,10 +31,12 @@ struct OnBoardingView: View {
                 //MARK: - Header
                 Spacer()
                 VStack(spacing: 0){
-                    Text("Share.")
+                    Text(imageTitle)
                         .font(.system(size: 60))
                         .foregroundColor(.white)
                         .fontWeight(.heavy)
+                        .transition(.opacity)
+                        .id(imageTitle)
                     Text("""
                          It is not how much we give but how much love we put in to giving.
                          """)
@@ -39,15 +47,54 @@ struct OnBoardingView: View {
                     .padding(.horizontal, 10)
                     
                 }//: Header
+                .opacity(isAnimating ? 1:0)
+                .offset(y: (isAnimating) ? 0 : -40)
+                .animation(Animation.easeInOut(duration: 1), value: isAnimating)
                 //MARK: - Center
                 ZStack{
                     MultipleCircleView(shapeColor: .white, shapeOpacity: 0.2)
-                    
+                        .offset(x:-imageOffset.width)
+                        .blur(radius: abs(imageOffset.width)/5)
+                        .animation(.easeOut(duration: 1.0), value: imageOffset)
+                   
                     Image("character-1")
                         .resizable()
                         .scaledToFit()
+                        .offset(x:imageOffset.width*1.5, y:0)
+                        .opacity(isAnimating ? 1:0)
+                        .rotationEffect(.degrees(imageOffset.width/20))
+                        .animation(Animation.easeOut(duration: 0.5), value: isAnimating)
+                        .gesture(
+                        DragGesture()
+                            .onChanged{ gesture in
+                                if abs(gesture.translation.width) < 150{
+                                    imageOffset = gesture.translation
+                                    withAnimation(.linear(duration: 0.25)){
+                                        indicatorOpacity = 0.0
+                                        imageTitle = "Give."
+                                    }
+                                }
+                            }
+                            .onEnded{_ in
+                                imageOffset = .zero
+                                withAnimation(.linear(duration: 0.25)){
+                                    indicatorOpacity = 1.0
+                                    imageTitle = "Share."
+                                }
+                            }
+                        )//: Gesture
+                        .animation(.easeInOut(duration: 1.0), value: imageOffset)
                         
                 }//: Center
+                .overlay(alignment: .bottom, content: {
+                    Image(systemName: "arrow.left.and.right.circle")
+                        .font(.system(size: 44, weight: .ultraLight))
+                        .offset(y:20)
+                        .foregroundColor(.white)
+                        .opacity(isAnimating ? 1:0)
+                        .animation(.easeOut(duration: 1.0).delay(2), value: isAnimating)
+                        .opacity(indicatorOpacity)
+                })
                 Spacer()
                 //MARK: - Footer
                 ZStack{
@@ -94,6 +141,8 @@ struct OnBoardingView: View {
                                 }
                                 .onEnded{_ in
                                     if buttonOffset > buttonWidth/2{
+                                        hapticFeedBack.notificationOccurred(.success)
+                                        playSound(sound: "success", type: "m4a")
                                         buttonOffset = buttonWidth - 80
                                         isOnBoardingScreenActive = false
                                     }else{
@@ -101,16 +150,24 @@ struct OnBoardingView: View {
                                     }
                                 }
                         )//:Gesture
-                        
+                      
                         Spacer()
                     }//:HStack
                     
                 }//:Footer
                 .frame(width:buttonWidth, height: 80, alignment: .center)
                 .padding()
+                .opacity(isAnimating ? 1: 0)
+                .offset(y: isAnimating ? 0:40)
+                .animation(Animation.easeInOut(duration: 1), value: isAnimating)
             } //: VStack
             
+            
         }//: ZStack
+        .onAppear{
+            isAnimating = true
+        }
+        .preferredColorScheme(.dark)
         
     }
 }

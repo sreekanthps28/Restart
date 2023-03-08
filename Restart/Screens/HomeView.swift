@@ -11,6 +11,7 @@ struct HomeView: View {
     
     //MARK: - Properties
     @AppStorage("onboarding") var isOnBoardingScreenActive = false
+    @State private var isAnimating = false
     
     //MARK: - Body
     var body: some View {
@@ -22,12 +23,13 @@ struct HomeView: View {
                     Image("character-2")
                         .resizable()
                         .scaledToFit()
+                        .offset(y:isAnimating ? -35: 35)
+                        .animation(Animation.easeInOut(duration: 4)
+                            .repeatForever(), value: isAnimating)
                 }
                 .padding()
                 
                 //MARK: - Center
-                
-                
                 Text("""
                          The time that leads to mastery is dependend on the intensity of our focus
                          """)
@@ -41,7 +43,10 @@ struct HomeView: View {
                 //MARK: - Footer
                 
                 Button {
-                    isOnBoardingScreenActive = true
+                    withAnimation{
+                        playSound(sound: "chimeup", type: "mp3")
+                        isOnBoardingScreenActive = true
+                    }
                 } label: {
                     Image(systemName: "arrow.triangle.2.circlepath.circle.fill")
                         .imageScale(.large)
@@ -54,6 +59,11 @@ struct HomeView: View {
                 .controlSize(.large)
 
             }//: VStack
+            .onAppear{
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: {
+                    isAnimating = true
+                })
+            }
         
     }
 }
